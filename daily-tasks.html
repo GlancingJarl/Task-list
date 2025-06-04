@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Daily Tasks</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Daily Tasks</h1>
+
+  <input type="text" id="newTaskInput" placeholder="Add a new task">
+  <button id="addTaskButton">Add Task</button>
+
+  <!-- Button to uncheck all tasks -->
+  <button id="uncheckAllButton">Uncheck All Tasks</button>
+
+  <ul id="taskList">
+    <!-- Task items will be added here -->
+  </ul>
+
+  <script>
+    const taskInput = document.getElementById('newTaskInput');
+    const addTaskButton = document.getElementById('addTaskButton');
+    const taskList = document.getElementById('taskList');
+    const uncheckAllButton = document.getElementById('uncheckAllButton');
+
+    // Function to save tasks to localStorage
+    function saveTasks() {
+      const tasks = [];
+      taskList.querySelectorAll('li').forEach(item => {
+        const taskText = item.childNodes[1].textContent; // Get text node content
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        tasks.push({
+          text: taskText,
+          checked: checkbox.checked
+        });
+      });
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    // Function to load tasks from localStorage
+    function loadTasks() {
+      const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+      tasks.forEach(task => {
+        createTaskElement(task.text, task.checked);
+      });
+    }
+
+    // Function to create a task list item element
+    function createTaskElement(taskText, isChecked = false) {
+      const listItem = document.createElement('li');
+        
+      // Create a checkbox
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = isChecked; // Set initial checked state
+      
+      // Append the checkbox and then the text content to the list item
+      listItem.appendChild(checkbox);
+      listItem.appendChild(document.createTextNode(taskText)); // Use createTextNode for safety
+
+      // Create and append delete button
+      const deleteButton = document.createElement('button');
+      deleteButton.textContent = 'X'; // Or a trash icon, for now 'X'
+      // Inline styles for the delete button (can be moved to CSS)
+      deleteButton.style.marginLeft = 'auto'; // Push button to the right
+      deleteButton.style.backgroundColor = '#dc3545'; // Red color
+      deleteButton.style.color = 'white';
+      deleteButton.style.border = 'none';
+      deleteButton.style.borderRadius = '4px';
+      deleteButton.style.cursor = 'pointer';
+      deleteButton.style.padding = '5px 10px';
+      deleteButton.style.fontSize = '0.8em';
+
+      deleteButton.addEventListener('click', (event) => {
+        // Prevent the list item click event from firing
+        event.stopPropagation();
+        taskList.removeChild(listItem);
+        saveTasks(); // Save after deleting
+      });
+
+      listItem.appendChild(deleteButton);
+
+      // Add click listener to toggle checkbox
+      listItem.addEventListener('click', () => {
+        checkbox.checked = !checkbox.checked;
+        saveTasks(); // Save after toggling checkbox
+      });
+
+      taskList.appendChild(listItem);
+    }
+
+    addTaskButton.addEventListener('click', () => {
+      const taskText = taskInput.value.trim();
+      if (taskText !== '') {
+        createTaskElement(taskText);
+        saveTasks(); // Save after adding
+        taskInput.value = ''; // Clear the input field
+      }
+    });
+
+    // Allow adding task by pressing Enter key
+    taskInput.addEventListener('keypress', (event) => {
+      if (event.key === 'Enter') {
+        addTaskButton.click();
+      }
+    });
+
+    // Event listener for the uncheck all button
+    uncheckAllButton.addEventListener('click', () => {
+      const checkboxes = taskList.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+      });
+      saveTasks(); // Save after unchecking all
+    });
+
+    // Load tasks when the page loads
+    document.addEventListener('DOMContentLoaded', loadTasks);
+
+  </script>
+</body>
+</html>
