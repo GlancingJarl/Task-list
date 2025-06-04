@@ -1,0 +1,83 @@
+.daily-tasks-container {
+  max-width: 600px; /* Set a maximum width */
+  margin: 20px auto; /* Center the container and add vertical margin */
+  padding: 0 15px; /* Add some horizontal padding */
+}
+
+.task-input-area {
+  display: flex; /* Arrange children (input and button) in a row */
+  gap: 10px; /* Add space between the input and button */
+  margin-bottom: 15px; /* Add space below the input area */
+}
+
+#newTaskInput {
+  padding: 8px;
+  margin-right: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  flex-grow: 1; /* Ensure it grows in the flex container */
+  font-size: 1em;
+}
+
+#addTaskButton {
+  padding: 8px 15px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#addTaskButton:hover {
+  background-color: #0056b3;
+}
+
+#taskList {
+  list-style-type: none; /* Remove the default list dot */
+  padding: 0;
+  margin-top: 20px;
+}
+
+#taskList li {
+  background-color: #fff;
+  padding: 15px 10px; /* Increased vertical padding for height */
+  margin-bottom: 5px;
+  border: 1px solid #eee; /* Add a border */
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  word-break: break-word;
+}
+
+#taskList li input[type="checkbox"] {
+  margin-right: 10px;
+  width: 20px;
+  height: 20px;
+  transform: scale(1.2);
+}
+
+#taskList li button {
+  margin-left: auto;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 5px 10px;
+  font-size: 0.8em;
+}
+
+#uncheckAllButton {
+  display: block;
+  margin: 10px auto;
+  padding: 8px 15px;
+  background-color: #ffc107;
+  color: #212529;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#uncheckAllButton:hover {
+  background-color: #e0a800;
+}

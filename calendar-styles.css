@@ -1,0 +1,181 @@
+/* Styles for Calendar */
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 0 15px;
+}
+
+.calendar-header h2 {
+    margin: 0;
+    flex-grow: 1;
+    text-align: center;
+    color: #0056b3;
+}
+
+#calendarContainer h2 {
+  margin-bottom: 20px;
+  color: #0056b3;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(7, 1fr);
+  gap: 5px;
+  width: 90%;
+  margin: 20px auto;
+  background-color: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  flex-grow: 1;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.day-name, .calendar-day, .empty-day {
+  text-align: center;
+  padding: 10px 0 15px 0;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.calendar-day.selected-day {
+  background-color: rgba(0, 123, 255, 0.3);
+  border-color: #007bff;
+}
+
+.calendar-day.current-day {
+  background-color: #007bff;
+  color: black;
+  font-weight: bold;
+  border-color: #007bff;
+}
+
+.empty-day {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+}
+
+.day-name {
+  font-weight: bold;
+  background-color: #e9ecef;
+  color: #495057;
+}
+
+.calendar-day {
+  background-color: #e9ecef;
+  border: 1px solid #dee2e6;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.calendar-day:hover {
+  background-color: #cfe2ff;
+}
+
+.calendar-day.has-tasks {
+  border-bottom: 2px solid #28a745;
+}
+
+.task-indicator {
+  width: 6px;
+  height: 6px;
+  background-color: #28a745;
+  border-radius: 50%;
+  margin-top: 4px;
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Styles for Calendar Layout */
+
+.main-calendar-container {
+  display: flex;
+  gap: 20px;
+  flex-grow: 1;
+  height: 100%;
+}
+
+#calendarContainer {
+  flex: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+#infoPanel {
+  flex: 1;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  min-width: 250px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+#infoPanel h2 {
+    margin-top: 0;
+    color: #0056b3;
+}
+
+/* Styles for Add Task Modal */
+
+#openAddTaskModal {
+  padding: 10px 20px;
+  font-size: 1em;
+  color: white;
+  background-color: #28a745;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+#openAddTaskModal:hover {
+  background-color: #218838;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.4);
+  padding-top: 60px;
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: 5% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  max-width: 600px;
+  border-radius: 8px;
+  position: relative;
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  position: absolute;
+  top: 10px;
+  right: 20px;
+} 

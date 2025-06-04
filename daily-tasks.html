@@ -3,19 +3,30 @@
 <head>
   <title>Daily Tasks</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="daily-task-styles.css">
 </head>
 <body>
-  <h1>Daily Tasks</h1>
+  <div class="header-area">
+    <a href="Index.html">
+      <button>Back to Index</button>
+    </a>
+  </div>
 
-  <input type="text" id="newTaskInput" placeholder="Add a new task">
-  <button id="addTaskButton">Add Task</button>
+  <div class="daily-tasks-container">
+    <h1>Daily Tasks</h1>
 
-  <!-- Button to uncheck all tasks -->
-  <button id="uncheckAllButton">Uncheck All Tasks</button>
+    <div class="task-input-area">
+      <input type="text" id="newTaskInput" placeholder="Add a new task">
+      <button id="addTaskButton">Add Task</button>
+    </div>
 
-  <ul id="taskList">
-    <!-- Task items will be added here -->
-  </ul>
+    <!-- Button to uncheck all tasks -->
+    <button id="uncheckAllButton">Uncheck All Tasks</button>
+
+    <ul id="taskList">
+      <!-- Task items will be added here -->
+    </ul>
+  </div>
 
   <script>
     const taskInput = document.getElementById('newTaskInput');

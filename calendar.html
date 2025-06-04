@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Calendar</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="calendar-styles.css">
+</head>
+<body>
+  <div class="page-container">
+    <div class="header-area">
+      <a href="Index.html">
+        <button>Back to Index</button>
+      </a>
+
+      
+    </div>
+    <div class="main-calendar-container">
+      
+      <div id="calendarContainer">
+        <!-- Calendar will be generated here -->
+         
+      </div>
+
+      <div id="infoPanel">
+        <h2>Information</h2>
+        <p>Details about selected dates or tasks will appear here.</p>
+      </div>
+    </div>
+
+    <!-- The Modal -->
+    <div id="addTaskModal" class="modal">
+
+      <!-- Modal content -->
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Add Task</h2>
+        <!-- Task form elements will go here later -->
+        <p>Task details form will appear here.</p>
+
+        <form id="addTaskForm">
+          <div>
+            <label for="taskDescription">Task Description:</label><br>
+            <input type="text" id="taskDescription" name="taskDescription" required><br><br>
+          </div>
+
+          <div>
+            <label>Task Type:</label><br>
+            <input type="radio" id="oneTimeTask" name="taskType" value="one-time" checked>
+            <label for="oneTimeTask">One-time</label><br>
+            <input type="radio" id="weeklyTask" name="taskType" value="weekly">
+            <label for="weeklyTask">Weekly</label><br><br>
+          </div>
+
+          <button type="submit" id="saveTaskButton">Save Task</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const calendarContainer = document.getElementById('calendarContainer');
+
+    function generateCalendar() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = today.getMonth(); // 0-indexed
+
+      const firstDayOfMonth = new Date(year, month, 1);
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      // Get the day of the week for the first day (0 for Sunday, 6 for Saturday)
+      const startingDayOfWeek = firstDayOfMonth.getDay();
+
+      const monthNames = ["January", "February", "March", "April", "May", "June",
+                          "July", "August", "September", "October", "November", "December"];
+      const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+      // Wrap button and title in a div with class calendar-header
+      let calendarHTML = '<div class="calendar-header">';
+      calendarHTML += '<button id="openAddTaskModal">Add Task</button>';
+      calendarHTML += `<h2>${monthNames[month]} ${year}</h2>`;
+      calendarHTML += '</div>'; // Close calendar-header div
+
+      calendarHTML += '<div class="calendar-grid">';
+
+      // Add day names row
+      dayNames.forEach(day => {
+        calendarHTML += `<div class="day-name">${day}</div>`;
+      });
+
+      // Add empty divs for days before the first day of the month
+      for (let i = 0; i < startingDayOfWeek; i++) {
+        calendarHTML += '<div class="empty-day"></div>';
+      }
+
+      // Add days of the month
+      for (let day = 1; day <= daysInMonth; day++) {
+        const currentDate = new Date(year, month, day);
+        const isToday = currentDate.toDateString() === today.toDateString();
+        let dayClass = isToday ? 'calendar-day current-day' : 'calendar-day';
+
+        // Find tasks for the current day
+        const tasksForDay = tasks.filter(task => {
+            const taskDate = new Date(task.date);
+            if (task.type === 'one-time') {
+                return taskDate.toDateString() === currentDate.toDateString();
+            } else if (task.type === 'weekly') {
+                // For weekly tasks, check if the day of the week matches and if the task's start date is on or before the current date
+                return taskDate.getDay() === currentDate.getDay() && taskDate <= currentDate;
+            }
+            return false; // Should not happen
+        });
+
+        let taskIndicatorHTML = '';
+        if (tasksForDay.length > 0) {
+            taskIndicatorHTML = '<div class="task-indicator"></div>'; // Simple indicator for now
+            dayClass += ' has-tasks'; // Add a class to style days with tasks
+        }
+
+        calendarHTML += `<div class="${dayClass}">${day}${taskIndicatorHTML}</div>`;
+      }
+
+      calendarHTML += '</div>';
+
+      calendarContainer.innerHTML = calendarHTML;
+
+      // Add click listeners to calendar days
+      const calendarDays = calendarContainer.querySelectorAll('.calendar-day');
+      const infoPanelTitle = document.querySelector('#infoPanel h2');
+
+      // Variable to keep track of the currently selected day element
+      let selectedDayElement = null;
+
+      calendarDays.forEach(dayElement => {
+        // Ensure we only add listener to actual day elements, not empty ones
+        if (!dayElement.classList.contains('empty-day')) {
+          dayElement.addEventListener('click', () => {
+            // Remove the 'selected-day' class from the previously selected day, if any
+            if (selectedDayElement) {
+              selectedDayElement.classList.remove('selected-day');
+            }
+
+            // Add the 'selected-day' class to the clicked day
+            dayElement.classList.add('selected-day');
+
+            // Update the selectedDayElement variable
+            selectedDayElement = dayElement;
+
+            const day = parseInt(dayElement.textContent);
+            // Get the year and month from the generated calendar title, not the current date
+            const [monthName, year] = calendarContainer.querySelector('h2').textContent.split(' ');
+            const month = monthNames.indexOf(monthName);
+            const clickedDate = new Date(parseInt(year), month, day);
+
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            infoPanelTitle.textContent = clickedDate.toLocaleDateString(undefined, options);
+
+            // Clear previous task list and add a heading
+            const infoPanel = document.getElementById('infoPanel');
+            let tasksListHTML = '';
+
+            // Find tasks for the clicked day
+            const tasksForClickedDay = tasks.filter(task => {
+                const taskDate = new Date(task.date);
+                if (task.type === 'one-time') {
+                    return taskDate.toDateString() === clickedDate.toDateString();
+                } else if (task.type === 'weekly') {
+                    // For weekly tasks, check if the day of the week matches and the task's start date is on or before the clicked date
+                     return taskDate.getDay() === clickedDate.getDay() && taskDate <= clickedDate;
+                }
+                return false;
+            });
+
+            if (tasksForClickedDay.length > 0) {
+                tasksListHTML += '<h3>Tasks:</h3><ul>';
+                tasksForClickedDay.forEach(task => {
+                    tasksListHTML += `<li>${task.description} (${task.type})</li>`;
+                });
+                tasksListHTML += '</ul>';
+            } else {
+                tasksListHTML += '<p>No tasks for this day.</p>';
+            }
+
+            // Update the info panel content (keeping the title)
+            // Assuming the H2 is the first child of infoPanel
+            while (infoPanel.children.length > 1) {
+              infoPanel.removeChild(infoPanel.lastChild);
+            }
+            infoPanel.innerHTML += tasksListHTML;
+          });
+        }
+      });
+    }
+
+    // Generate the calendar when the page loads
+    
+
+    // Update DOMContentLoaded listener to include loading calendar tasks
+    document.addEventListener('DOMContentLoaded', () => {
+        generateCalendar();
+        loadCalendarTasks();
+
+        // Get the modal, the button that opens it, and the <span> element that closes it
+        const modal = document.getElementById('addTaskModal');
+        const openModalButton = document.getElementById('openAddTaskModal');
+        const closeButton = modal.querySelector('.close');
+
+        // When the user clicks the button, open the modal
+        openModalButton.onclick = function() {
+          modal.style.display = "block";
+        }
+
+        // When the user clicks on <span> (x), close the modal
+        closeButton.onclick = function() {
+          modal.style.display = "none";
+        }
+
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function(event) {
+          if (event.target == modal) {
+            modal.style.display = "none";
+          }
+        }
+    });
+
+    // Add task modal form handling
+    const addTaskForm = document.getElementById('addTaskForm');
+    const taskDescriptionInput = document.getElementById('taskDescription');
+    const oneTimeTaskRadio = document.getElementById('oneTimeTask');
+    const weeklyTaskRadio = document.getElementById('weeklyTask');
+
+    // Variable to store tasks (using a simple array for now, will need more structure for weekly tasks)
+    let tasks = JSON.parse(localStorage.getItem('calendarTasks')) || [];
+
+    // Function to save tasks to localStorage
+    function saveCalendarTasks() {
+      localStorage.setItem('calendarTasks', JSON.stringify(tasks));
+    }
+
+    // Function to load tasks (placeholder - displaying on calendar is next)
+    function loadCalendarTasks() {
+        tasks = JSON.parse(localStorage.getItem('calendarTasks')) || [];
+        // Logic to display tasks on the calendar will go here later
+    }
+
+    addTaskForm.addEventListener('submit', (event) => {
+      event.preventDefault(); // Prevent default form submission
+
+      const taskDescription = taskDescriptionInput.value.trim();
+      const taskType = oneTimeTaskRadio.checked ? 'one-time' : 'weekly';
+
+      if (taskDescription !== '' && selectedDayElement) { // Ensure description is not empty and a day is selected
+        // Get the date from the selected day element's data or content
+        // We will need to store the date information more robustly in the day element
+        // For now, let's rely on the selectedDayElement being available from the calendar click handler
+        const day = parseInt(selectedDayElement.textContent);
+        const [monthName, year] = calendarContainer.querySelector('h2').textContent.split(' ');
+        const month = monthNames.indexOf(monthName);
+        const selectedDate = new Date(parseInt(year), month, day);
+
+        const newTask = {
+          description: taskDescription,
+          type: taskType,
+          date: selectedDate.toISOString() // Store date in ISO format for consistency
+        };
+
+        tasks.push(newTask);
+        saveCalendarTasks(); // Save the updated tasks array
+
+        // Clear form and close modal
+        taskDescriptionInput.value = '';
+        oneTimeTaskRadio.checked = true; // Reset to one-time
+        modal.style.display = "none";
+
+        // Optional: Provide feedback to the user or update calendar display
+        console.log('Task saved:', newTask);
+        // Logic to display the task on the calendar will be added later
+
+      } else if (!selectedDayElement) {
+        alert('Please select a day on the calendar first.');
+      }
+    });
+
+  </script>
+
+</body>
+</html>
