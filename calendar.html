@@ -42,24 +42,38 @@
             <label for="taskDescription">Task Description:</label><br>
             <input type="text" id="taskDescription" name="taskDescription" required><br><br>
           </div>
-
-          <div>
-            <label>Task Type:</label><br>
-            <input type="radio" id="oneTimeTask" name="taskType" value="one-time" checked>
-            <label for="oneTimeTask">One-time</label><br>
-            <input type="radio" id="weeklyTask" name="taskType" value="weekly">
-            <label for="weeklyTask">Weekly</label><br><br>
-          </div>
-
-          <button type="submit" id="saveTaskButton">Save Task</button>
+          <button type="submit" id="startSelectionButton">Start Selecting Date(s)</button>
         </form>
       </div>
 
     </div>
   </div>
 
+  <!-- Add the Done Selecting button here -->
+  <button id="doneSelectingButton" style="display: none;">Done Selecting</button>
+
   <script>
     const calendarContainer = document.getElementById('calendarContainer');
+
+    // Declare variables globally, but assign elements inside DOMContentLoaded
+    let modal = null;
+    let openModalButton = null;
+    let closeButton = null;
+    let doneSelectingButton = null;
+    let taskDescriptionInput = null; // Declare globally
+
+    // Month names array (moved to global scope)
+    const monthNames = ["January", "February", "March", "April", "May", "June",
+                          "July", "August", "September", "October", "November", "December"];
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]; // Keep dayNames here too
+
+    // Variable to store tasks (using a simple array for now, will need more structure for weekly tasks)
+    let tasks = JSON.parse(localStorage.getItem('calendarTasks')) || [];
+
+    // Variable to store the description of the task being added during selection mode
+    let taskDescriptionToSave = '';
+    // Variable to track if we are in selection mode
+    let isSelectingDate = false;
 
     function generateCalendar() {
       const today = new Date();
@@ -71,10 +85,6 @@
 
       // Get the day of the week for the first day (0 for Sunday, 6 for Saturday)
       const startingDayOfWeek = firstDayOfMonth.getDay();
-
-      const monthNames = ["January", "February", "March", "April", "May", "June",
-                          "July", "August", "September", "October", "November", "December"];
-      const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
       // Wrap button and title in a div with class calendar-header
       let calendarHTML = '<div class="calendar-header">';
@@ -104,10 +114,12 @@
         const tasksForDay = tasks.filter(task => {
             const taskDate = new Date(task.date);
             if (task.type === 'one-time') {
+                // For one-time tasks, check if the task date is the same as the current calendar day
                 return taskDate.toDateString() === currentDate.toDateString();
             } else if (task.type === 'weekly') {
-                // For weekly tasks, check if the day of the week matches and if the task's start date is on or before the current date
-                return taskDate.getDay() === currentDate.getDay() && taskDate <= currentDate;
+                // For weekly tasks, check if the stored day of the week matches the current day of the week
+                // AND if the task's start date is on or before the current date
+                return task.dayOfWeek === currentDate.getDay() && taskDate <= currentDate;
             }
             return false; // Should not happen
         });
@@ -125,162 +137,347 @@
 
       calendarContainer.innerHTML = calendarHTML;
 
-      // Add click listeners to calendar days
-      const calendarDays = calendarContainer.querySelectorAll('.calendar-day');
+      // Add event listeners after the calendar HTML is rendered
+      // The addCalendarEventListeners now only adds permanent delegation listeners.
+      // Visual state (highlighting) is managed by enter/exitSelectionMode.
+      addCalendarEventListeners();
+    }
+
+    // New function to add event listeners to dynamically created calendar elements
+    // These listeners use event delegation and are permanent.
+    function addCalendarEventListeners() {
+      // Add click listeners to calendar days and weekday names (using event delegation)
+      // const calendarDays = calendarContainer.querySelectorAll('.calendar-day'); // Not needed for event delegation
       const infoPanelTitle = document.querySelector('#infoPanel h2');
 
       // Variable to keep track of the currently selected day element
-      let selectedDayElement = null;
+      // let selectedDayElement = null; // This state is more for info panel and less relevant for adding now
 
-      calendarDays.forEach(dayElement => {
-        // Ensure we only add listener to actual day elements, not empty ones
-        if (!dayElement.classList.contains('empty-day')) {
-          dayElement.addEventListener('click', () => {
-            // Remove the 'selected-day' class from the previously selected day, if any
-            if (selectedDayElement) {
-              selectedDayElement.classList.remove('selected-day');
+      // After regenerating calendar, if in selection mode, re-apply highlighting - Removed, handled by explicit state changes
+      // if (isSelectingDate) {
+      //     document.querySelectorAll('.calendar-day:not(.empty-day), .day-name').forEach(element => {
+      //         element.classList.add('selectable-day');
+      //     });
+      //     // Ensure the done button is visible if in selection mode
+      //     if (doneSelectingButton) doneSelectingButton.style.display = 'block';
+      // }
+
+      // Use event delegation for calendar days
+      calendarContainer.addEventListener('click', (event) => {
+          const dayElement = event.target.closest('.calendar-day');
+
+          // Handle existing info panel logic only if NOT in selection mode
+          if (dayElement && !dayElement.classList.contains('empty-day') && !isSelectingDate) {
+              // Find the actual calendar-day element if a child was clicked
+              const clickedCalendarDay = event.target.closest('.calendar-day');
+
+               // Remove the 'selected-day' class from the previously selected day, if any
+              const previouslySelectedDayElement = calendarContainer.querySelector('.calendar-day.selected-day');
+              if (previouslySelectedDayElement) {
+                previouslySelectedDayElement.classList.remove('selected-day');
+              }
+
+              // Add the 'selected-day' class to the clicked day
+              if (clickedCalendarDay) {
+                 clickedCalendarDay.classList.add('selected-day');
+
+                 const day = parseInt(clickedCalendarDay.textContent);
+                 // Get the year and month from the generated calendar title
+                 const [monthName, year] = calendarContainer.querySelector('h2').textContent.split(' ');
+                 const month = monthNames.indexOf(monthName);
+                 const clickedDate = new Date(parseInt(year), month, day);
+
+                 const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                 if (infoPanelTitle) infoPanelTitle.textContent = clickedDate.toLocaleDateString(undefined, options);
+
+                 // Clear previous task list and add a heading
+                 const infoPanel = document.getElementById('infoPanel');
+                 let tasksListHTML = '';
+
+                 // Find tasks for the clicked day
+                 const tasksForClickedDay = tasks.filter(task => {
+                     const taskDate = new Date(task.date);
+                     if (task.type === 'one-time') {
+                         return taskDate.toDateString() === clickedDate.toDateString();
+                     } else if (task.type === 'weekly') {
+                         // For weekly tasks, check if the stored day of the week matches
+                         // and the task's start date is on or before the clicked date
+                          return task.dayOfWeek === clickedDate.getDay() && taskDate <= clickedDate;
+                     }
+                     return false;
+                 });
+
+                 if (tasksForClickedDay.length > 0) {
+                     tasksListHTML += '<h3>Tasks:</h3><ul>';
+                     tasksForClickedDay.forEach(task => {
+                         tasksListHTML += `<li>${task.description} (${task.type})</li>`;
+                     });
+                     tasksListHTML += '</ul>';
+                 } else {
+                     tasksListHTML += '<p>No tasks for this day.</p>';
+                 }
+
+                 // Update the info panel content (keeping the title)
+                 if (infoPanel) {
+                     // Assuming the H2 is the first child of infoPanel
+                     while (infoPanel.children.length > 1) {
+                       infoPanel.removeChild(infoPanel.lastChild);
+                     }
+                     infoPanel.innerHTML += tasksListHTML;
+                 }
+              }
+            } // End of NOT in selection mode block
+
+            // Handle task saving if in selection mode and a day is clicked
+            if (isSelectingDate && dayElement && !dayElement.classList.contains('empty-day')) {
+                 // Save as a one-time task
+                const day = parseInt(dayElement.textContent);
+                const [monthName, year] = calendarContainer.querySelector('h2').textContent.split(' ');
+                const month = monthNames.indexOf(monthName);
+                const selectedDate = new Date(parseInt(year), month, day);
+
+                const newTask = {
+                  description: taskDescriptionToSave,
+                  type: 'one-time',
+                  date: selectedDate.toISOString()
+                };
+
+                tasks.push(newTask);
+                saveCalendarTasks(); // Save and regenerate calendar
+
+                // Optional: Provide feedback to the user
+                // The saveCalendarTasks call regenerates, so add feedback after a short delay
+                 setTimeout(() => {
+                     // Recalculate startingDayOfWeek here for feedback highlighting
+                     // Get year and month from the calendar title, not current date
+                     const calendarTitle = calendarContainer.querySelector('h2').textContent.split(' ');
+                     const currentYear = parseInt(calendarTitle[1]);
+                     const currentMonth = monthNames.indexOf(calendarTitle[0]);
+                     const firstDayOfCurrentMonth = new Date(currentYear, currentMonth, 1);
+                     const startingDayOfWeek = firstDayOfCurrentMonth.getDay();
+
+                     // Corrected nth-child calculation: 7 day names + starting empty days + the day of the month
+                     const dayOfMonth = parseInt(dayElement.textContent);
+                     const nthChildIndex = 7 + startingDayOfWeek + dayOfMonth;
+
+                     const updatedDayElement = calendarContainer.querySelector('.calendar-grid .calendar-day:nth-child(' + nthChildIndex + ')');
+                     if (updatedDayElement) {
+                        updatedDayElement.classList.add('task-added-feedback'); // Add a class for temporary feedback
+                        setTimeout(() => {
+                            updatedDayElement.classList.remove('task-added-feedback');
+                        }, 500); // Remove class after 500ms
+                     }
+                 }, 50); // Small delay to allow DOM update
+
+                // Keep selection mode active, do NOT reset state or UI here
             }
-
-            // Add the 'selected-day' class to the clicked day
-            dayElement.classList.add('selected-day');
-
-            // Update the selectedDayElement variable
-            selectedDayElement = dayElement;
-
-            const day = parseInt(dayElement.textContent);
-            // Get the year and month from the generated calendar title, not the current date
-            const [monthName, year] = calendarContainer.querySelector('h2').textContent.split(' ');
-            const month = monthNames.indexOf(monthName);
-            const clickedDate = new Date(parseInt(year), month, day);
-
-            const options = { year: 'numeric', month: 'long', day: 'numeric' };
-            infoPanelTitle.textContent = clickedDate.toLocaleDateString(undefined, options);
-
-            // Clear previous task list and add a heading
-            const infoPanel = document.getElementById('infoPanel');
-            let tasksListHTML = '';
-
-            // Find tasks for the clicked day
-            const tasksForClickedDay = tasks.filter(task => {
-                const taskDate = new Date(task.date);
-                if (task.type === 'one-time') {
-                    return taskDate.toDateString() === clickedDate.toDateString();
-                } else if (task.type === 'weekly') {
-                    // For weekly tasks, check if the day of the week matches and the task's start date is on or before the clicked date
-                     return taskDate.getDay() === clickedDate.getDay() && taskDate <= clickedDate;
-                }
-                return false;
-            });
-
-            if (tasksForClickedDay.length > 0) {
-                tasksListHTML += '<h3>Tasks:</h3><ul>';
-                tasksForClickedDay.forEach(task => {
-                    tasksListHTML += `<li>${task.description} (${task.type})</li>`;
-                });
-                tasksListHTML += '</ul>';
-            } else {
-                tasksListHTML += '<p>No tasks for this day.</p>';
-            }
-
-            // Update the info panel content (keeping the title)
-            // Assuming the H2 is the first child of infoPanel
-            while (infoPanel.children.length > 1) {
-              infoPanel.removeChild(infoPanel.lastChild);
-            }
-            infoPanel.innerHTML += tasksListHTML;
-          });
-        }
       });
+
+      // Use event delegation for weekday names
+      calendarContainer.addEventListener('click', (event) => {
+          const dayNameElement = event.target.closest('.day-name');
+
+          if (dayNameElement && isSelectingDate) {
+              // Save as a weekly task
+              // Get the index of the clicked day name
+              const dayNameElements = calendarContainer.querySelectorAll('.day-name');
+              let weekdayIndex = -1;
+              dayNameElements.forEach((element, index) => {
+                  if (element === dayNameElement) {
+                      weekdayIndex = index;
+                  }
+              });
+
+              if (weekdayIndex !== -1) {
+                   // Store the date the task was added as the start date for the weekly task
+                  const addedDate = new Date();
+
+                  const newTask = {
+                    description: taskDescriptionToSave,
+                    type: 'weekly',
+                    dayOfWeek: weekdayIndex,
+                    date: addedDate.toISOString() // Store the date added
+                  };
+
+                  tasks.push(newTask);
+                  saveCalendarTasks(); // Save and regenerate calendar
+
+                  // Keep selection mode active, do NOT reset state or UI here
+                  // Add feedback to the weekday name - apply class directly to the clicked element before regeneration
+                   dayNameElement.classList.add('task-added-feedback'); // Add a class for temporary feedback
+                    setTimeout(() => {
+                         // Need to find the updated element after regeneration
+                         const updatedDayNameElement = calendarContainer.querySelectorAll('.day-name')[weekdayIndex];
+                         if (updatedDayNameElement) {
+                             updatedDayNameElement.classList.remove('task-added-feedback');
+                         }
+                    }, 500); // Remove class after 500ms
+
+                  alert('Weekly task added for ' + dayNames[weekdayIndex] + '!'); // Optional feedback
+              }
+          }
+      });
+
+      // Use event delegation for the Open Add Task Modal button
+      calendarContainer.addEventListener('click', (event) => {
+          const openModalButtonInsideCalendar = event.target.closest('#openAddTaskModal');
+          if (openModalButtonInsideCalendar) {
+               if (modal) modal.style.display = "block";
+          }
+      });
+
+      // Add hover effects for weekday names using event delegation
+      calendarContainer.addEventListener('mouseover', (event) => {
+          const dayNameElement = event.target.closest('.day-name');
+
+          if (dayNameElement) {
+              // Get the index of the hovered day name
+              const dayNameElements = calendarContainer.querySelectorAll('.day-name');
+              let hoveredWeekdayIndex = -1;
+              dayNameElements.forEach((element, index) => {
+                  if (element === dayNameElement) {
+                      hoveredWeekdayIndex = index;
+                  }
+              });
+
+              if (hoveredWeekdayIndex !== -1) {
+                  // Highlight all calendar days of this weekday
+                  const calendarDays = calendarContainer.querySelectorAll('.calendar-day:not(.empty-day)');
+                  const year = parseInt(calendarContainer.querySelector('h2').textContent.split(' ')[1]);
+                  const monthName = calendarContainer.querySelector('h2').textContent.split(' ')[0];
+                  const month = monthNames.indexOf(monthName);
+                  const firstDayOfMonth = new Date(year, month, 1);
+                  const startingDayOfWeek = firstDayOfMonth.getDay();
+
+                  calendarDays.forEach((dayElement, index) => {
+                       // Calculate the day of the week for this calendar day element
+                       // The index in the NodeList is 0-based relative to non-empty days
+                       // Need to adjust for the starting day of the week
+                       const dayOfMonth = parseInt(dayElement.textContent);
+                       const dateForDay = new Date(year, month, dayOfMonth);
+                       const dayOfWeekForDay = dateForDay.getDay();
+
+                       if (dayOfWeekForDay === hoveredWeekdayIndex) {
+                           dayElement.classList.add('weekday-highlight');
+                       }
+                  });
+              }
+          }
+      });
+
+       calendarContainer.addEventListener('mouseout', (event) => {
+          const dayNameElement = event.target.closest('.day-name');
+
+          // Only remove highlighting if the mouse is leaving a day name element
+          // This prevents removing highlight when moving from day name to a highlighted day
+          if (dayNameElement) {
+               // Remove highlighting from all previously highlighted days
+              document.querySelectorAll('.calendar-day.weekday-highlight').forEach(element => {
+                  element.classList.remove('weekday-highlight');
+              });
+          }
+      });
+
     }
 
-    // Generate the calendar when the page loads
-    
+    // Function to explicitly enter selection mode
+    function enterSelectionMode() {
+        isSelectingDate = true;
+        // Apply selection mode class to container for CSS highlighting
+        calendarContainer.classList.add('selection-mode');
+         // Show the done button
+         if (doneSelectingButton) doneSelectingButton.style.display = 'block';
 
-    // Update DOMContentLoaded listener to include loading calendar tasks
+    }
+
+     // Function to explicitly exit selection mode
+    function exitSelectionMode() {
+        isSelectingDate = false;
+        taskDescriptionToSave = ''; // Clear the stored description
+        // Remove selection mode class from container
+        calendarContainer.classList.remove('selection-mode');
+        // Hide the button
+        if (doneSelectingButton) doneSelectingButton.style.display = 'none';
+    }
+
+    // Update DOMContentLoaded listener
     document.addEventListener('DOMContentLoaded', () => {
-        generateCalendar();
+        // Get element references after DOM is ready and assign to global variables
+        modal = document.getElementById('addTaskModal');
+        // openModalButton = document.getElementById('openAddTaskModal'); // No longer get here
+        closeButton = modal ? modal.querySelector('.close') : null;
+        doneSelectingButton = document.getElementById('doneSelectingButton');
+        taskDescriptionInput = document.getElementById('taskDescription');
+
+        // Generate calendar after loading tasks - this call will now also add event listeners
         loadCalendarTasks();
 
-        // Get the modal, the button that opens it, and the <span> element that closes it
-        const modal = document.getElementById('addTaskModal');
-        const openModalButton = document.getElementById('openAddTaskModal');
-        const closeButton = modal.querySelector('.close');
+        // Assign event listeners for static elements (openModalButton listener moved to addCalendarEventListeners)
+        // if (openModalButton) {
+        //     openModalButton.onclick = function() {
+        //       if (modal) modal.style.display = "block";
+        //     }
+        // }
 
-        // When the user clicks the button, open the modal
-        openModalButton.onclick = function() {
-          modal.style.display = "block";
-        }
-
-        // When the user clicks on <span> (x), close the modal
-        closeButton.onclick = function() {
-          modal.style.display = "none";
+        if (closeButton) {
+            closeButton.onclick = function() {
+              if (modal) modal.style.display = "none";
+            }
         }
 
         // When the user clicks anywhere outside of the modal, close it
         window.onclick = function(event) {
-          if (event.target == modal) {
+          if (modal && event.target == modal) {
             modal.style.display = "none";
           }
         }
+
+        // Add event listener for the Done Selecting button
+        // Ensure this is assigned only once
+        if (doneSelectingButton && !doneSelectingButton._listenerAttached) {
+            doneSelectingButton.addEventListener('click', () => {
+                exitSelectionMode(); // Call the exit function
+            });
+             doneSelectingButton._listenerAttached = true; // Mark listener as attached
+        }
+
+        // Assign form submit listener here after modal and input are assigned
+        const addTaskForm = document.getElementById('addTaskForm');
+         if (addTaskForm) {
+            addTaskForm.addEventListener('submit', (event) => {
+              event.preventDefault(); // Prevent default form submission
+
+              // Use the globally assigned taskDescriptionInput
+              const taskDescription = taskDescriptionInput.value.trim();
+
+              if (taskDescription !== '') {
+                taskDescriptionToSave = taskDescription; // Store description temporarily
+                if (modal) modal.style.display = "none"; // Close modal
+                enterSelectionMode(); // Enter selection mode
+
+                // Clear the input field - use the globally assigned variable
+                if (taskDescriptionInput) taskDescriptionInput.value = '';
+
+              } else {
+                alert('Please enter a task description.');
+              }
+            });
+        }
     });
-
-    // Add task modal form handling
-    const addTaskForm = document.getElementById('addTaskForm');
-    const taskDescriptionInput = document.getElementById('taskDescription');
-    const oneTimeTaskRadio = document.getElementById('oneTimeTask');
-    const weeklyTaskRadio = document.getElementById('weeklyTask');
-
-    // Variable to store tasks (using a simple array for now, will need more structure for weekly tasks)
-    let tasks = JSON.parse(localStorage.getItem('calendarTasks')) || [];
 
     // Function to save tasks to localStorage
     function saveCalendarTasks() {
       localStorage.setItem('calendarTasks', JSON.stringify(tasks));
+      // After saving, regenerate the calendar to show the new task indicators
+      generateCalendar(); // generateCalendar now calls addCalendarEventListeners
     }
 
     // Function to load tasks (placeholder - displaying on calendar is next)
     function loadCalendarTasks() {
         tasks = JSON.parse(localStorage.getItem('calendarTasks')) || [];
         // Logic to display tasks on the calendar will go here later
+        generateCalendar(); // Generate calendar after loading tasks, which calls addCalendarEventListeners
     }
-
-    addTaskForm.addEventListener('submit', (event) => {
-      event.preventDefault(); // Prevent default form submission
-
-      const taskDescription = taskDescriptionInput.value.trim();
-      const taskType = oneTimeTaskRadio.checked ? 'one-time' : 'weekly';
-
-      if (taskDescription !== '' && selectedDayElement) { // Ensure description is not empty and a day is selected
-        // Get the date from the selected day element's data or content
-        // We will need to store the date information more robustly in the day element
-        // For now, let's rely on the selectedDayElement being available from the calendar click handler
-        const day = parseInt(selectedDayElement.textContent);
-        const [monthName, year] = calendarContainer.querySelector('h2').textContent.split(' ');
-        const month = monthNames.indexOf(monthName);
-        const selectedDate = new Date(parseInt(year), month, day);
-
-        const newTask = {
-          description: taskDescription,
-          type: taskType,
-          date: selectedDate.toISOString() // Store date in ISO format for consistency
-        };
-
-        tasks.push(newTask);
-        saveCalendarTasks(); // Save the updated tasks array
-
-        // Clear form and close modal
-        taskDescriptionInput.value = '';
-        oneTimeTaskRadio.checked = true; // Reset to one-time
-        modal.style.display = "none";
-
-        // Optional: Provide feedback to the user or update calendar display
-        console.log('Task saved:', newTask);
-        // Logic to display the task on the calendar will be added later
-
-      } else if (!selectedDayElement) {
-        alert('Please select a day on the calendar first.');
-      }
-    });
 
   </script>
 
