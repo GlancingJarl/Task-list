@@ -247,4 +247,32 @@
 #infoPanel li input[type="checkbox"] {
     margin-right: 10px; /* Space between checkbox and text */
     cursor: pointer; /* Indicate clickable checkbox */
+}
+
+/* Styles for the 'Done Selecting' button */
+#doneSelectingButton {
+    padding: 12px 24px;
+    font-size: 1.1em;
+    color: white;
+    background-color: #007bff; /* A prominent blue */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    /* Positioning to not affect layout */
+    position: fixed; /* Position relative to the viewport */
+    top: 20px; /* 20px from the top */
+    left: 50%; /* Start at the horizontal center */
+    transform: translateX(-50%); /* Shift left by half its width to truly center it */
+    z-index: 1000; /* Ensure it's above other content */
+    
+    /* Keep existing styles for appearance */
+    display: block; /* Keep display block for centering with margin auto if needed, but fixed position overrides this for layout */
+    width: fit-content; /* Keep width fit-content */
+    text-align: center; /* Keep text center */
+    margin: 0; /* Remove auto margins that interfere with fixed positioning */
+}
+
+#doneSelectingButton:hover {
+    background-color: #0056b3;
 } 

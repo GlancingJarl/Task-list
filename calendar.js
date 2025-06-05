@@ -37,7 +37,6 @@ function generateCalendar() {
   calendarHTML += '<button id="openAddTaskModal">Add Task</button>';
   calendarHTML += `<h2>${monthNames[month]} ${year}</h2>`;
   calendarHTML += '</div>'; // Close calendar-header div
-
   calendarHTML += '<div class="calendar-grid">';
 
   // Add day names row
@@ -72,8 +71,16 @@ function generateCalendar() {
 
     let taskIndicatorHTML = '';
     if (tasksForDay.length > 0) {
-        // Check if all tasks for this day are completed
-        const allTasksCompleted = tasksForDay.every(task => task.completed);
+        // Check if all tasks for this day are completed, considering task type
+        const allTasksCompleted = tasksForDay.every(task => {
+            if (task.type === 'one-time') {
+                return task.completed;
+            } else if (task.type === 'weekly') {
+                 // Check if the current date (for the day being generated) is in the completedDates array
+                 return task.completedDates.includes(currentDate.toISOString());
+            }
+            return false; // Should not happen
+        });
 
         taskIndicatorHTML = '<div class="task-indicator"></div>'; // Simple indicator for now
         if (allTasksCompleted) {
@@ -686,12 +693,12 @@ function updateDayIndicatorColor(date) {
                taskIndicator.classList.add('task-indicator');
                updatedDayElement.appendChild(taskIndicator);
 
-               // Check if all tasks for this day are completed, considering weekly tasks by date
+               // Check if all tasks for this day are completed, considering task type
                const allTasksCompleted = tasksForDay.every(task => {
                    if (task.type === 'one-time') {
                        return task.completed;
                    } else if (task.type === 'weekly') {
-                        // Check if the specific date being checked is in the completedDates array
+                        // Check if the current date (for the day being generated) is in the completedDates array
                         return task.completedDates.includes(date.toISOString());
                    }
                    return false; // Should not happen
