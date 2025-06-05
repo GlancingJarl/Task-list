@@ -196,6 +196,26 @@
   background-color: #218838;
 }
 
+/* Styles for PDF Generation Button */
+#generatePdfButton {
+  position: absolute;
+  right: 10px;
+  top: 20px;
+  padding: 10px 20px;
+  font-size: 1em;
+  color: white;
+  background-color: #007bff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  z-index: 10;
+}
+
+#generatePdfButton:hover {
+  background-color: #0056b3;
+}
+
 .modal {
   display: none;
   position: fixed;

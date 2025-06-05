@@ -791,4 +791,153 @@ function updateDayIndicatorColor(date) {
                // No tasks for this day
            }
     }
+}
+
+// TODO: Add JavaScript code here to handle the click event for the PDF generation button.
+// This code should collect the current month's tasks and generate a PDF.
+// Consider using a library like jsPDF or html2pdf.js for PDF generation.
+
+document.getElementById('generatePdfButton').addEventListener('click', () => {
+  // Get current month and year from global variables
+  const year = currentYear;
+  const month = currentMonth;
+  const monthName = monthNames[month];
+
+  // Filter tasks for the current month
+  const tasksForMonth = tasks.filter(task => {
+    const taskDate = new Date(task.date);
+    if (task.type === 'one-time') {
+      return taskDate.getFullYear() === year && taskDate.getMonth() === month;
+    } else if (task.type === 'weekly') {
+        // For weekly tasks, include them if their start date is within or before the current month
+        // and if the task occurs on a day of the week that appears in this month.
+        // A simpler approach is to just list all weekly tasks added up to this month,
+        // or filter weekly tasks that occur on any day of the week within this month.
+        // Let's list weekly tasks that occur on any day of the week present in this month
+        // and were added before or during this month.
+        const taskAddedDate = new Date(task.date);
+        return taskAddedDate.getFullYear() < year || (taskAddedDate.getFullYear() === year && taskAddedDate.getMonth() <= month);
+    }
+    return false;
+  });
+
+  // Sort tasks by date
+  tasksForMonth.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // Create a temporary element to hold the content for the PDF
+  const pdfContent = document.createElement('div');
+  pdfContent.style.padding = '20px';
+  pdfContent.style.fontFamily = 'sans-serif';
+
+  // Add title
+  const title = document.createElement('h1');
+  title.textContent = `Tasks for ${monthName} ${year}`;
+  pdfContent.appendChild(title);
+
+  // Create the calendar grid structure for PDF
+  const pdfCalendarGrid = document.createElement('div');
+  pdfCalendarGrid.style.display = 'grid';
+  pdfCalendarGrid.style.gridTemplateColumns = 'repeat(7, 1fr)';
+  pdfCalendarGrid.style.gap = '5px';
+  pdfCalendarGrid.style.width = '100%';
+  pdfCalendarGrid.style.border = '1px solid #ccc';
+  pdfCalendarGrid.style.padding = '5px';
+  pdfCalendarGrid.style.boxSizing = 'border-box';
+  pdfCalendarGrid.style.fontSize = '10px'; // Smaller font for PDF
+
+  // Add day names to the grid
+  dayNames.forEach(day => {
+    const dayNameElement = document.createElement('div');
+    dayNameElement.style.fontWeight = 'bold';
+    dayNameElement.style.textAlign = 'center';
+    dayNameElement.style.padding = '5px 0';
+    dayNameElement.style.backgroundColor = '#f2f2f2';
+    dayNameElement.style.border = '1px solid #eee';
+    dayNameElement.textContent = day;
+    pdfCalendarGrid.appendChild(dayNameElement);
+  });
+
+  const firstDayOfMonth = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startingDayOfWeek = firstDayOfMonth.getDay();
+
+  // Add empty days before the first day
+  for (let i = 0; i < startingDayOfWeek; i++) {
+    const emptyDayElement = document.createElement('div');
+    emptyDayElement.style.padding = '10px';
+    emptyDayElement.style.border = '1px solid #eee';
+    emptyDayElement.style.backgroundColor = '#fafafa';
+    pdfCalendarGrid.appendChild(emptyDayElement);
+  }
+
+  // Add days of the month and their tasks
+  for (let day = 1; day <= daysInMonth; day++) {
+    const currentDate = new Date(year, month, day);
+    const dayElement = document.createElement('div');
+    dayElement.style.padding = '5px'; // Smaller padding
+    dayElement.style.border = '1px solid #eee';
+    dayElement.style.minHeight = '60px'; // Adjust minimum height
+    dayElement.style.position = 'relative';
+    dayElement.style.display = 'flex'; // Use flexbox for day content
+    dayElement.style.flexDirection = 'column';
+    dayElement.style.gap = '2px'; // Space between day number and tasks
+
+    // Add the day number
+    const dayNumber = document.createElement('div');
+    dayNumber.style.fontWeight = 'bold';
+    dayNumber.textContent = day;
+    dayElement.appendChild(dayNumber);
+
+    // Get tasks for the current day using the helper function
+    const tasksForDay = getTasksForDate(currentDate);
+
+    // Add tasks to the day element
+    if (tasksForDay.length > 0) {
+        const taskList = document.createElement('ul');
+        taskList.style.listStyle = 'none';
+        taskList.style.paddingLeft = '0';
+        taskList.style.margin = '0'; // Remove default margin
+
+        tasksForDay.forEach(task => {
+            const listItem = document.createElement('li');
+            listItem.style.fontSize = '0.9em'; // Slightly larger font for list items
+            listItem.style.marginBottom = '2px'; // Smaller margin between list items
+            listItem.textContent = `- ${task.description} ${task.completed ? '(C)' : ''}`;
+            taskList.appendChild(listItem);
+        });
+        dayElement.appendChild(taskList);
+    }
+
+    pdfCalendarGrid.appendChild(dayElement);
+  }
+
+  pdfContent.appendChild(pdfCalendarGrid);
+
+  // html2pdf options
+  const options = {
+    margin: 10,
+    filename: `tasks_${monthName.toLowerCase()}_${year}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  // Generate PDF
+  html2pdf().from(pdfContent).set(options).save();
+});
+
+// Helper function to get tasks for a specific date, considering both one-time and weekly tasks
+function getTasksForDate(date) {
+    const tasksForDay = tasks.filter(task => {
+        const taskDate = new Date(task.date);
+        if (task.type === 'one-time') {
+            return taskDate.toDateString() === date.toDateString();
+        } else if (task.type === 'weekly') {
+            // Check if the stored day of the week matches the current day of the week
+            // AND if the task's start date is on or before the current date
+            return task.dayOfWeek === date.getDay() && taskDate <= date;
+        }
+        return false;
+    });
+    return tasksForDay;
 } 
