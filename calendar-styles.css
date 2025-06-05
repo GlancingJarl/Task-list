@@ -80,20 +80,22 @@
   background-color: #cfe2ff;
 }
 
+/* Styles for days with tasks (yellow) */
 .calendar-day.has-tasks {
-  border-bottom: 2px solid #28a745;
+  border-bottom: 2px solid #ffc107; /* Yellow border */
 }
 
-.task-indicator {
-  width: 6px;
-  height: 6px;
-  background-color: #28a745;
-  border-radius: 50%;
-  margin-top: 4px;
-  position: absolute;
-  bottom: 5px;
-  left: 50%;
-  transform: translateX(-50%);
+.calendar-day.has-tasks .task-indicator {
+  background-color: #ffc107; /* Yellow dot */
+}
+
+/* Styles for days with all tasks completed (green) */
+.calendar-day.all-tasks-completed {
+    border-bottom: 2px solid #28a745; /* Green border */
+}
+
+.calendar-day.all-tasks-completed .task-indicator {
+    background-color: #28a745; /* Green dot */
 }
 
 /* Style for selectable days/day names when adding a task */
@@ -203,8 +205,46 @@
   transition: background-color 0.2s ease; /* Smooth transition */
 }
 
+/* Style for the remove task button in the info panel */
+.remove-task-button {
+  color: #dc3545; /* Bootstrap danger red */
+  cursor: pointer;
+  margin-left: 10px;
+  font-weight: bold;
+}
+
+.remove-task-button:hover {
+  color: #c82333;
+}
+
 /* Style for highlighting all days of a weekday on hover */
 .calendar-day.weekday-highlight {
     background-color: #a0c4ff; /* Light blue background */
     border-color: #3399ff;
+}
+
+/* Styles for Info Panel Task List */
+#infoPanel ul {
+    list-style: none; /* Remove default bullet points */
+    padding: 0; /* Remove default padding */
+}
+
+#infoPanel li {
+    border: 1px solid #e9ecef; /* Add a light border */
+    padding: 10px; /* Add some padding */
+    margin-bottom: 5px; /* Add space between items */
+    border-radius: 4px;
+    display: flex; /* Use flexbox for alignment */
+    align-items: center;
+    cursor: pointer; /* Indicate clickable */
+    transition: background-color 0.2s ease;
+}
+
+#infoPanel li:hover {
+    background-color: #f8f9fa; /* Light hover effect */
+}
+
+#infoPanel li input[type="checkbox"] {
+    margin-right: 10px; /* Space between checkbox and text */
+    cursor: pointer; /* Indicate clickable checkbox */
 } 
