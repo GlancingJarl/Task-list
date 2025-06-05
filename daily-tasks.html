@@ -15,9 +15,17 @@
   <div class="daily-tasks-container">
     <h1>Daily Tasks</h1>
 
-    <div class="task-input-area">
-      <input type="text" id="newTaskInput" placeholder="Add a new task">
-      <button id="addTaskButton">Add Task</button>
+    <div class="input-and-reset-container">
+      <div class="task-input-area">
+        <input type="text" id="newTaskInput" placeholder="Add a new task">
+        <button id="addTaskButton">Add Task</button>
+      </div>
+
+      <div class="reset-time-area">
+        <label for="resetTimeInput">Daily Reset Time:</label>
+        <input type="time" id="resetTimeInput">
+        <button id="setResetTimeButton">Set Time</button>
+      </div>
     </div>
 
     <!-- Button to uncheck all tasks -->
@@ -26,6 +34,7 @@
     <ul id="taskList">
       <!-- Task items will be added here -->
     </ul>
+
   </div>
 
   <script>
@@ -33,6 +42,8 @@
     const addTaskButton = document.getElementById('addTaskButton');
     const taskList = document.getElementById('taskList');
     const uncheckAllButton = document.getElementById('uncheckAllButton');
+    const resetTimeInput = document.getElementById('resetTimeInput');
+    const setResetTimeButton = document.getElementById('setResetTimeButton');
 
     // Function to save tasks to localStorage
     function saveTasks() {
@@ -45,15 +56,47 @@
           checked: checkbox.checked
         });
       });
-      localStorage.setItem('tasks', JSON.stringify(tasks));
+      localStorage.setItem('tasks', JSON.stringify(tasks)); // Just save the tasks
     }
 
     // Function to load tasks from localStorage
     function loadTasks() {
       const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-      tasks.forEach(task => {
-        createTaskElement(task.text, task.checked);
-      });
+      const resetTime = localStorage.getItem('resetTime');
+      const lastResetDate = localStorage.getItem('lastResetDate');
+      const now = new Date();
+      const todayDate = now.toDateString();
+
+      let shouldUncheck = false;
+      if (resetTime) {
+        const [resetHour, resetMinute] = resetTime.split(':').map(Number);
+        const resetDateTimeToday = new Date(now);
+        resetDateTimeToday.setHours(resetHour, resetMinute, 0, 0);
+
+        if (now >= resetDateTimeToday) {
+          if (!lastResetDate || new Date(lastResetDate).toDateString() !== todayDate) {
+            shouldUncheck = true;
+            console.log('Reset time passed and not yet reset today. Unchecking tasks.');
+          }
+        }
+      }
+
+      if (shouldUncheck) {
+        tasks.forEach(task => {
+          createTaskElement(task.text, false); // Create task as unchecked
+        });
+        saveTasks();
+        localStorage.setItem('lastResetDate', todayDate); // Mark today as reset
+      } else {
+        tasks.forEach(task => {
+          createTaskElement(task.text, task.checked); // Create task with saved checked state
+        });
+      }
+
+      // Load the saved reset time into the input field
+      if (resetTime) {
+        resetTimeInput.value = resetTime;
+      }
     }
 
     // Function to create a task list item element
@@ -123,6 +166,16 @@
         checkbox.checked = false;
       });
       saveTasks(); // Save after unchecking all
+      // Note: This manual uncheck action is independent of the daily automatic reset
+    });
+
+    // Event listener for the set reset time button
+    setResetTimeButton.addEventListener('click', () => {
+      const timeValue = resetTimeInput.value;
+      if (timeValue) {
+        localStorage.setItem('resetTime', timeValue);
+        localStorage.removeItem('lastResetDate');
+      }
     });
 
     // Load tasks when the page loads

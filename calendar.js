@@ -8,6 +8,10 @@ let doneSelectingButton = null;
 let taskDescriptionInput = null;
 let selectedDateForPanel = null; // Store the date of the currently selected day
 
+// Variables to keep track of the currently displayed month and year
+let currentMonth = new Date().getMonth(); // 0-indexed
+let currentYear = new Date().getFullYear();
+
 // Month names array (moved to global scope)
 const monthNames = ["January", "February", "March", "April", "May", "June",
                       "July", "August", "September", "October", "November", "December"];
@@ -22,9 +26,9 @@ let taskDescriptionToSave = '';
 let isSelectingDate = false;
 
 function generateCalendar() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth(); // 0-indexed
+  // Use the globally tracked month and year
+  const year = currentYear;
+  const month = currentMonth;
 
   const firstDayOfMonth = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -35,7 +39,9 @@ function generateCalendar() {
   // Wrap button and title in a div with class calendar-header
   let calendarHTML = '<div class="calendar-header">';
   calendarHTML += '<button id="openAddTaskModal">Add Task</button>';
+  calendarHTML += '<button id="prevMonthButton">&lt;</button>';
   calendarHTML += `<h2>${monthNames[month]} ${year}</h2>`;
+  calendarHTML += '<button id="nextMonthButton">&gt;</button>';
   calendarHTML += '</div>'; // Close calendar-header div
   calendarHTML += '<div class="calendar-grid">';
 
@@ -52,7 +58,7 @@ function generateCalendar() {
   // Add days of the month
   for (let day = 1; day <= daysInMonth; day++) {
     const currentDate = new Date(year, month, day);
-    const isToday = currentDate.toDateString() === today.toDateString();
+    const isToday = currentDate.toDateString() === new Date().toDateString();
     let dayClass = isToday ? 'calendar-day current-day' : 'calendar-day';
 
     // Find tasks for the current day
@@ -265,9 +271,10 @@ function addCalendarEventListeners() {
    // Use event delegation for the Open Add Task Modal button
    calendarContainer.addEventListener('click', (event) => {
        const openModalButtonInsideCalendar = event.target.closest('#openAddTaskModal');
+
        if (openModalButtonInsideCalendar) {
             if (modal) modal.style.display = "block";
-       }
+        }
    });
 
    // Add hover effects for weekday names using event delegation
@@ -569,6 +576,74 @@ document.addEventListener('DOMContentLoaded', () => {
              }
         });
         infoPanel._checkboxChangeListenerAttached = true; // Mark listener as attached
+    }
+
+    // Add event listeners for month navigation buttons using event delegation
+    // Ensure this is attached only once
+    if (calendarContainer && !calendarContainer._monthNavListenerAttached) {
+        calendarContainer.addEventListener('click', (event) => {
+            const prevMonthButton = event.target.closest('#prevMonthButton');
+            const nextMonthButton = event.target.closest('#nextMonthButton');
+
+            if (prevMonthButton) {
+                // Decrease month, adjust year if needed
+                currentMonth--;
+                if (currentMonth < 0) {
+                    currentMonth = 11; // December
+                    currentYear--;
+                }
+                generateCalendar(); // Regenerate calendar for the new month/year
+                // Note: Listeners for day/weekday clicks and hover effects are re-attached by addCalendarEventListeners,
+                // but the month navigation listener itself is attached here once.
+                addCalendarEventListeners(); // Re-attach other necessary listeners
+            }
+            else if (nextMonthButton) {
+                // Increase month, adjust year if needed
+                currentMonth++;
+                if (currentMonth > 11) {
+                    currentMonth = 0; // January
+                    currentYear++;
+                }
+                generateCalendar(); // Regenerate calendar for the new month/year
+                // Note: Listeners for day/weekday clicks and hover effects are re-attached by addCalendarEventListeners,
+                // but the month navigation listener itself is attached here once.
+                addCalendarEventListeners(); // Re-attach other necessary listeners
+            }
+        });
+        calendarContainer._monthNavListenerAttached = true; // Mark listener as attached
+    }
+
+    // Automatically select the current day and display its info on load
+    const today = new Date();
+    // Get the displayed month and year from the calendar header
+    const calendarTitleElement = calendarContainer.querySelector('h2');
+    if (calendarTitleElement) {
+        const [monthName, year] = calendarTitleElement.textContent.split(' ');
+        const displayedMonth = monthNames.indexOf(monthName);
+        const displayedYear = parseInt(year);
+
+        // Check if the current calendar view is the current month and year
+        if (displayedMonth === today.getMonth() && displayedYear === today.getFullYear()) {
+            // Find the day element for the current day of the month
+            const dayElements = calendarContainer.querySelectorAll('.calendar-grid .calendar-day:not(.empty-day)');
+            let currentDayElement = null;
+            dayElements.forEach(dayElement => {
+                if (parseInt(dayElement.textContent) === today.getDate()) {
+                    currentDayElement = dayElement;
+                }
+            });
+
+            if (currentDayElement) {
+                // Add the 'selected-day' class to highlight it
+                currentDayElement.classList.add('selected-day');
+
+                // Set the global selected date variable
+                selectedDateForPanel = today;
+
+                // Update the info panel for the current day
+                updateInfoPanel(selectedDateForPanel);
+            }
+        }
     }
 
 }); // End of DOMContentLoaded listener

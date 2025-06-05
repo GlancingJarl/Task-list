@@ -4,14 +4,41 @@
   display: flex;
   align-items: center;
   margin-bottom: 20px;
-  padding: 0 15px;
+  gap: 10px;
+  position: relative;
+  padding: 0 80px;
 }
 
 .calendar-header h2 {
-    margin: 0;
-    flex-grow: 1;
+    margin: 0 auto;
     text-align: center;
     color: #0056b3;
+    flex-grow: 1;
+}
+
+#prevMonthButton, #nextMonthButton {
+    background-color: transparent;
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+    color: #0056b3;
+    padding: 5px;
+    transition: color 0.3s ease;
+    position: absolute;
+    top: 35%;
+    transform: translateY(-50%);
+}
+
+#prevMonthButton {
+    left: 500px;
+}
+
+#nextMonthButton {
+    right: 500px;
+}
+
+#prevMonthButton:hover, #nextMonthButton:hover {
+    color: #007bff;
 }
 
 #calendarContainer h2 {
@@ -150,6 +177,10 @@
 /* Styles for Add Task Modal */
 
 #openAddTaskModal {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
   padding: 10px 20px;
   font-size: 1em;
   color: white;
@@ -158,6 +189,7 @@
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s ease;
+  z-index: 10;
 }
 
 #openAddTaskModal:hover {
@@ -179,13 +211,14 @@
 
 .modal-content {
   background-color: #fefefe;
-  margin: 5% auto;
-  padding: 20px;
-  border: 1px solid #888;
+  margin: 8% auto; /* Center vertically, adjust as needed */
+  padding: 30px; /* Increased padding */
+  border: none; /* Remove default border */
   width: 80%;
   max-width: 600px;
   border-radius: 8px;
   position: relative;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3); /* Softer, larger shadow */
 }
 
 .close {
@@ -196,6 +229,50 @@
   position: absolute;
   top: 10px;
   right: 20px;
+}
+
+/* Styles for the Add Task Form */
+#addTaskForm {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Space between form elements */
+    margin-top: 20px;
+}
+
+#addTaskForm div {
+    /* Container for label and input, no specific flex needed here */
+}
+
+#addTaskForm label {
+    font-weight: bold;
+    margin-bottom: 5px; /* Space between label and input */
+    display: block; /* Make label a block element */
+    color: #555; /* Slightly darker label text */
+}
+
+#addTaskForm input[type="text"] {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
+    width: 100%; /* Make input fill its container */
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+#addTaskForm button[type="submit"] {
+    padding: 12px 20px;
+    font-size: 1.1em;
+    color: white;
+    background-color: #007bff; /* Blue button */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    align-self: flex-start; /* Align button to the start in the flex column */
+}
+
+#addTaskForm button[type="submit"]:hover {
+    background-color: #0056b3;
 }
 
 /* Style for temporary feedback when a task is added to a day/weekday */
